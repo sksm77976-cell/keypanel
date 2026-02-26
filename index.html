@@ -1,74 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>ChristianScript Premium Panel</title>
+<title>CH Key Premium Panel</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-
 body{
 margin:0;
-font-family: 'Segoe UI', sans-serif;
+font-family:'Segoe UI',sans-serif;
 background:#0f0f0f;
 color:white;
 overflow-x:hidden;
 }
-
 canvas{
 position:fixed;
 top:0;
 left:0;
 z-index:-1;
 }
-
 h1{
 text-align:center;
 margin-top:20px;
-font-size:35px;
+font-size:32px;
 background:linear-gradient(90deg,#00ffcc,#ff00ff);
 -webkit-background-clip:text;
 color:transparent;
 }
-
 .panel{
 width:90%;
 max-width:1000px;
 margin:auto;
 margin-top:20px;
-background:rgba(20,20,20,0.8);
+background:rgba(20,20,20,0.85);
 padding:20px;
 border-radius:15px;
-box-shadow:0 0 25px #00ffcc55;
+box-shadow:0 0 30px #00ffcc55;
 backdrop-filter:blur(10px);
 }
-
 .section{
 margin-bottom:30px;
 }
-
-input, select{
+input,select{
 padding:8px;
 border:none;
 border-radius:8px;
 margin:5px;
 }
-
 button{
-padding:8px 12px;
+padding:7px 12px;
 border:none;
 border-radius:8px;
 cursor:pointer;
 font-weight:bold;
 transition:0.3s;
 }
-
 .btn-create{
 background:#00ffcc;
 }
-
 .btn-create:hover{
 background:#00ccaa;
 }
-
 .keyCard{
 background:#1a1a1a;
 margin:15px 0;
@@ -77,34 +67,36 @@ border-radius:12px;
 border:2px solid transparent;
 animation:borderColor 5s linear infinite;
 }
-
 @keyframes borderColor{
 0%{border-color:#00ffcc;}
 50%{border-color:#ff00ff;}
 100%{border-color:#00ffcc;}
 }
-
 .keyTitle{
 font-size:18px;
 font-weight:bold;
 margin-bottom:5px;
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
-
+.copyBtn{
+cursor:pointer;
+font-size:18px;
+}
+.copyBtn:hover{
+transform:scale(1.2);
+}
 .actions button{
 margin:3px;
 }
-
-.actions i{
-margin-right:5px;
-}
-
 </style>
 </head>
 <body>
 
 <canvas id="particles"></canvas>
 
-<h1>✨ ChristianScript Premium Panel ✨</h1>
+<h1>✨ CH Premium Key Panel ✨</h1>
 
 <div class="panel">
 
@@ -128,14 +120,15 @@ margin-right:5px;
 
 <script>
 
-const API = "https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
-
-function randomPart(){
-return Math.random().toString(36).substring(2,7).toUpperCase();
-}
+const API="https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
 
 function generateKey(){
-return "ChristianScript-" + randomPart() + "-" + randomPart();
+let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+let result="CH";
+for(let i=0;i<4;i++){
+result+=chars.charAt(Math.floor(Math.random()*chars.length));
+}
+return result;
 }
 
 function convertToMs(value,type){
@@ -147,12 +140,10 @@ if(type==="days") return value*24*60*60*1000;
 function formatTime(ms){
 let s=Math.floor(ms/1000);
 if(s<=0) return "⛔ Expirada";
-
 let d=Math.floor(s/86400);
 let h=Math.floor((s%86400)/3600);
 let m=Math.floor((s%3600)/60);
 let sec=s%60;
-
 return `${d}d ${h}h ${m}m ${sec}s`;
 }
 
@@ -186,14 +177,17 @@ return;
 }
 
 Object.keys(data).forEach(k=>{
-
 let remaining=data[k].expire-Date.now();
 
 let div=document.createElement("div");
 div.className="keyCard";
 
 div.innerHTML=`
-<div class="keyTitle">${k}</div>
+<div class="keyTitle">
+<span>${k}</span>
+<span class="copyBtn" onclick="copyKey('${k}')">📋</span>
+</div>
+
 Creada: ${new Date(data[k].created).toLocaleString()}<br>
 Tiempo restante: ${formatTime(remaining)}<br>
 Estado: ${data[k].banned ? "🔒 BANEADA" : "✅ ACTIVA"}<br><br>
@@ -206,17 +200,21 @@ Estado: ${data[k].banned ? "🔒 BANEADA" : "✅ ACTIVA"}<br><br>
 </select>
 
 <div class="actions">
-<button onclick="addTime('${k}')"><i class="fas fa-plus"></i>Agregar</button>
-<button onclick="removeTime('${k}')"><i class="fas fa-minus"></i>Quitar</button>
-<button onclick="toggleBan('${k}', ${data[k].banned})"><i class="fas fa-lock"></i>Ban</button>
-<button onclick="deleteKey('${k}')"><i class="fas fa-trash"></i>Borrar</button>
+<button onclick="addTime('${k}')">➕</button>
+<button onclick="removeTime('${k}')">➖</button>
+<button onclick="toggleBan('${k}', ${data[k].banned})">🔒</button>
+<button onclick="deleteKey('${k}')">🗑️</button>
 </div>
 `;
 
 container.appendChild(div);
+});
+});
+}
 
-});
-});
+function copyKey(key){
+navigator.clipboard.writeText(key);
+alert("Key copiada: "+key);
 }
 
 function addTime(key){
@@ -255,7 +253,8 @@ body:JSON.stringify(!current)
 }
 
 function deleteKey(key){
-fetch(API+"/"+key+".json",{method:"DELETE"}).then(loadKeys);
+fetch(API+"/"+key+".json",{method:"DELETE"})
+.then(loadKeys);
 }
 
 setInterval(loadKeys,3000);
