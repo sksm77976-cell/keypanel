@@ -2,8 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CH Key Dashboard</title>
-
+<title>CH Key Professional Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
@@ -16,6 +15,42 @@ color:white;
 overflow-x:hidden;
 }
 
+/* LOCK SCREEN */
+#lockScreen{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+z-index:9999;
+}
+
+#lockScreen input{
+padding:12px;
+border-radius:10px;
+border:none;
+margin-bottom:10px;
+text-align:center;
+}
+
+#lockScreen button{
+padding:10px 20px;
+border:none;
+border-radius:10px;
+background:#3b82f6;
+color:white;
+cursor:pointer;
+transition:0.3s;
+}
+
+#lockScreen button:hover{
+transform:scale(1.05);
+}
+
+/* PARTICLES */
 #particles{
 position:fixed;
 width:100%;
@@ -29,11 +64,6 @@ width:95%;
 max-width:1200px;
 margin:auto;
 padding:20px;
-}
-
-h1{
-font-size:28px;
-font-weight:800;
 }
 
 .stats{
@@ -73,8 +103,6 @@ padding:8px;
 border-radius:8px;
 border:none;
 margin:5px 0;
-width:100%;
-max-width:200px;
 }
 
 button{
@@ -91,9 +119,15 @@ transform:scale(1.05);
 }
 
 .primary{background:#3b82f6;color:white}
-.danger{background:#ef4444;color:white}
-.success{background:#22c55e;color:white}
-.warning{background:#facc15;color:black}
+.action-btn{
+cursor:pointer;
+margin-right:6px;
+transition:0.2s;
+}
+
+.action-btn:hover{
+transform:scale(1.2);
+}
 
 .table{
 background:#1e293b;
@@ -116,19 +150,17 @@ text-align:left;
 tr{
 border-bottom:1px solid rgba(255,255,255,0.05);
 }
-
-.action-btn{
-cursor:pointer;
-margin-right:6px;
-transition:0.2s;
-}
-
-.action-btn:hover{
-transform:scale(1.2);
-}
 </style>
 </head>
 <body>
+
+<!-- LOCK SCREEN -->
+<div id="lockScreen">
+<h2>🔒 Acceso Restringido</h2>
+<input id="accessCode" type="password" placeholder="Código de acceso">
+<button onclick="checkAccess()">Entrar</button>
+<p id="errorMsg" style="color:#ef4444;"></p>
+</div>
 
 <canvas id="particles"></canvas>
 
@@ -175,6 +207,17 @@ transform:scale(1.2);
 const API="https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
 let cacheData={};
 
+/* ACCESS */
+function checkAccess(){
+let code=document.getElementById("accessCode").value;
+if(code==="110808"){
+document.getElementById("lockScreen").style.display="none";
+}else{
+document.getElementById("errorMsg").innerText="Código incorrecto";
+}
+}
+
+/* KEY SYSTEM */
 function generateKey(){
 let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 let result="CH";
@@ -238,7 +281,6 @@ else if(remaining<=0){estado="Expirada";expired++}
 else active++;
 
 let row=document.createElement("tr");
-
 row.innerHTML=`
 <td>${k} <span class="action-btn" onclick="copyKey('${k}')">📋</span></td>
 <td id="time_${k}">${formatTime(remaining)}</td>
@@ -248,9 +290,7 @@ row.innerHTML=`
 <span class="action-btn" onclick="addTime('${k}',5)">➕5m</span>
 <span class="action-btn" onclick="removeTime('${k}',5)">➖5m</span>
 <span class="action-btn" onclick="deleteKey('${k}')">🗑️</span>
-</td>
-`;
-
+</td>`;
 table.appendChild(row);
 });
 
@@ -295,11 +335,12 @@ function copyKey(key){
 navigator.clipboard.writeText(key);
 }
 
+/* AUTO UPDATE */
 setInterval(updateTimers,1000);
 setInterval(loadKeys,5000);
 loadKeys();
 
-/* PARTICULAS */
+/* PARTICLES */
 const canvas=document.getElementById("particles");
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
@@ -323,7 +364,6 @@ if(p.y>canvas.height) p.y=0;
 requestAnimationFrame(animate);
 }
 animate();
-
 </script>
 
 </body>
