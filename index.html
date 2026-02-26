@@ -1,106 +1,157 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>CH Key Premium Panel</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<title>CH Key Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+
 body{
 margin:0;
-font-family:'Segoe UI',sans-serif;
-background:#0f0f0f;
+font-family:'Inter',sans-serif;
+background:linear-gradient(135deg,#0f172a,#1e293b);
 color:white;
-overflow-x:hidden;
 }
-canvas{
-position:fixed;
-top:0;
-left:0;
-z-index:-1;
-}
-h1{
-text-align:center;
-margin-top:20px;
-font-size:32px;
-background:linear-gradient(90deg,#00ffcc,#ff00ff);
--webkit-background-clip:text;
-color:transparent;
-}
-.panel{
-width:90%;
-max-width:1000px;
+
+.container{
+width:95%;
+max-width:1200px;
 margin:auto;
-margin-top:20px;
-background:rgba(20,20,20,0.85);
 padding:20px;
-border-radius:15px;
-box-shadow:0 0 30px #00ffcc55;
-backdrop-filter:blur(10px);
 }
-.section{
+
+h1{
+font-size:32px;
+font-weight:800;
+margin-bottom:5px;
+}
+
+.subtitle{
+opacity:0.7;
 margin-bottom:30px;
 }
+
+.stats{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:20px;
+margin-bottom:30px;
+}
+
+.card{
+background:#1e293b;
+padding:20px;
+border-radius:16px;
+box-shadow:0 0 20px rgba(0,0,0,0.3);
+}
+
+.stat-number{
+font-size:30px;
+font-weight:800;
+margin-top:10px;
+}
+
+.green{color:#22c55e;}
+.red{color:#ef4444;}
+.yellow{color:#facc15;}
+
+.create-box{
+background:#1e293b;
+padding:20px;
+border-radius:16px;
+margin-bottom:30px;
+}
+
 input,select{
-padding:8px;
+padding:10px;
+border-radius:10px;
 border:none;
-border-radius:8px;
-margin:5px;
+margin:5px 0;
 }
+
 button{
-padding:7px 12px;
+padding:10px 20px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 cursor:pointer;
-font-weight:bold;
-transition:0.3s;
+font-weight:600;
 }
-.btn-create{
-background:#00ffcc;
+
+.btn-primary{
+background:#3b82f6;
+color:white;
 }
-.btn-create:hover{
-background:#00ccaa;
+
+.btn-primary:hover{
+background:#2563eb;
 }
-.keyCard{
-background:#1a1a1a;
-margin:15px 0;
-padding:15px;
-border-radius:12px;
-border:2px solid transparent;
-animation:borderColor 5s linear infinite;
+
+.table{
+background:#1e293b;
+border-radius:16px;
+padding:20px;
 }
-@keyframes borderColor{
-0%{border-color:#00ffcc;}
-50%{border-color:#ff00ff;}
-100%{border-color:#00ffcc;}
+
+table{
+width:100%;
+border-collapse:collapse;
 }
-.keyTitle{
-font-size:18px;
-font-weight:bold;
-margin-bottom:5px;
-display:flex;
-justify-content:space-between;
-align-items:center;
+
+th,td{
+padding:12px;
+text-align:left;
 }
-.copyBtn{
+
+th{
+opacity:0.6;
+font-weight:600;
+}
+
+tr{
+border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+.copy{
 cursor:pointer;
-font-size:18px;
+margin-left:10px;
 }
-.copyBtn:hover{
-transform:scale(1.2);
+
+.delete{
+cursor:pointer;
+color:#ef4444;
 }
-.actions button{
-margin:3px;
-}
+
 </style>
 </head>
 <body>
 
-<canvas id="particles"></canvas>
+<div class="container">
 
-<h1>✨ CH Premium Key Panel ✨</h1>
+<h1>🔑 CH Key Generator Hub</h1>
+<div class="subtitle">Gestor profesional de llaves con API conectada</div>
 
-<div class="panel">
+<div class="stats">
+<div class="card">
+Total de Keys
+<div id="total" class="stat-number">0</div>
+</div>
 
-<div class="section">
+<div class="card">
+Keys Activas
+<div id="active" class="stat-number green">0</div>
+</div>
+
+<div class="card">
+Keys Baneadas
+<div id="banned" class="stat-number red">0</div>
+</div>
+
+<div class="card">
+Keys Expiradas
+<div id="expired" class="stat-number yellow">0</div>
+</div>
+</div>
+
+<div class="create-box">
 <h3>➕ Crear Nueva Key</h3>
 <input id="timeValue" placeholder="Cantidad">
 <select id="timeType">
@@ -108,12 +159,24 @@ margin:3px;
 <option value="hours">Horas</option>
 <option value="days">Días</option>
 </select>
-<button class="btn-create" onclick="createKey()">Crear</button>
+<br>
+<button class="btn-primary" onclick="createKey()">Crear Key</button>
 </div>
 
-<div class="section">
-<h3>📜 Keys Generadas</h3>
-<div id="keys"></div>
+<div class="table">
+<h3>📋 Todas las Keys</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Tiempo Restante</th>
+<th>Estado</th>
+<th>Creada</th>
+<th>Acciones</th>
+</tr>
+</thead>
+<tbody id="keyTable"></tbody>
+</table>
 </div>
 
 </div>
@@ -131,26 +194,25 @@ result+=chars.charAt(Math.floor(Math.random()*chars.length));
 return result;
 }
 
-function convertToMs(value,type){
-if(type==="minutes") return value*60*1000;
-if(type==="hours") return value*60*60*1000;
-if(type==="days") return value*24*60*60*1000;
+function convertToMs(v,t){
+if(t==="minutes") return v*60000;
+if(t==="hours") return v*3600000;
+if(t==="days") return v*86400000;
 }
 
 function formatTime(ms){
 let s=Math.floor(ms/1000);
-if(s<=0) return "⛔ Expirada";
-let d=Math.floor(s/86400);
-let h=Math.floor((s%86400)/3600);
-let m=Math.floor((s%3600)/60);
-let sec=s%60;
-return `${d}d ${h}h ${m}m ${sec}s`;
+if(s<=0) return "Expirada";
+let m=Math.floor(s/60);
+let h=Math.floor(m/60);
+let d=Math.floor(h/24);
+return d+"d "+(h%24)+"h "+(m%60)+"m";
 }
 
 function createKey(){
 let value=parseInt(document.getElementById("timeValue").value);
 let type=document.getElementById("timeType").value;
-if(!value) return alert("Tiempo inválido");
+if(!value) return;
 
 let key=generateKey();
 let expire=Date.now()+convertToMs(value,type);
@@ -169,129 +231,63 @@ function loadKeys(){
 fetch(API+".json")
 .then(r=>r.json())
 .then(data=>{
-let container=document.getElementById("keys");
-container.innerHTML="";
-if(!data){
-container.innerHTML="<p>No hay keys creadas.</p>";
-return;
-}
+
+let total=0,active=0,banned=0,expired=0;
+
+let table=document.getElementById("keyTable");
+table.innerHTML="";
+
+if(!data) return;
 
 Object.keys(data).forEach(k=>{
+total++;
+
 let remaining=data[k].expire-Date.now();
+let estado="Activa";
 
-let div=document.createElement("div");
-div.className="keyCard";
+if(data[k].banned){
+estado="Baneada";
+banned++;
+}
+else if(remaining<=0){
+estado="Expirada";
+expired++;
+}
+else{
+active++;
+}
 
-div.innerHTML=`
-<div class="keyTitle">
-<span>${k}</span>
-<span class="copyBtn" onclick="copyKey('${k}')">📋</span>
-</div>
+let row=document.createElement("tr");
 
-Creada: ${new Date(data[k].created).toLocaleString()}<br>
-Tiempo restante: ${formatTime(remaining)}<br>
-Estado: ${data[k].banned ? "🔒 BANEADA" : "✅ ACTIVA"}<br><br>
-
-<input id="add_${k}" placeholder="Tiempo">
-<select id="type_${k}">
-<option value="minutes">Min</option>
-<option value="hours">Horas</option>
-<option value="days">Días</option>
-</select>
-
-<div class="actions">
-<button onclick="addTime('${k}')">➕</button>
-<button onclick="removeTime('${k}')">➖</button>
-<button onclick="toggleBan('${k}', ${data[k].banned})">🔒</button>
-<button onclick="deleteKey('${k}')">🗑️</button>
-</div>
+row.innerHTML=`
+<td>${k} <span class="copy" onclick="copyKey('${k}')">📋</span></td>
+<td>${formatTime(remaining)}</td>
+<td>${estado}</td>
+<td>${new Date(data[k].created).toLocaleDateString()}</td>
+<td><span class="delete" onclick="deleteKey('${k}')">🗑️</span></td>
 `;
 
-container.appendChild(div);
+table.appendChild(row);
 });
+
+document.getElementById("total").innerText=total;
+document.getElementById("active").innerText=active;
+document.getElementById("banned").innerText=banned;
+document.getElementById("expired").innerText=expired;
+
 });
 }
 
 function copyKey(key){
 navigator.clipboard.writeText(key);
-alert("Key copiada: "+key);
-}
-
-function addTime(key){
-let value=parseInt(document.getElementById("add_"+key).value);
-let type=document.getElementById("type_"+key).value;
-if(!value) return;
-
-fetch(API+"/"+key+".json")
-.then(r=>r.json())
-.then(data=>{
-data.expire+=convertToMs(value,type);
-fetch(API+"/"+key+".json",{method:"PUT",body:JSON.stringify(data)})
-.then(loadKeys);
-});
-}
-
-function removeTime(key){
-let value=parseInt(document.getElementById("add_"+key).value);
-let type=document.getElementById("type_"+key).value;
-if(!value) return;
-
-fetch(API+"/"+key+".json")
-.then(r=>r.json())
-.then(data=>{
-data.expire-=convertToMs(value,type);
-fetch(API+"/"+key+".json",{method:"PUT",body:JSON.stringify(data)})
-.then(loadKeys);
-});
-}
-
-function toggleBan(key,current){
-fetch(API+"/"+key+"/banned.json",{
-method:"PUT",
-body:JSON.stringify(!current)
-}).then(loadKeys);
 }
 
 function deleteKey(key){
-fetch(API+"/"+key+".json",{method:"DELETE"})
-.then(loadKeys);
+fetch(API+"/"+key+".json",{method:"DELETE"}).then(loadKeys);
 }
 
 setInterval(loadKeys,3000);
 loadKeys();
-
-/* PARTICULAS */
-const canvas=document.getElementById("particles");
-const ctx=canvas.getContext("2d");
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
-
-let particles=[];
-for(let i=0;i<100;i++){
-particles.push({
-x:Math.random()*canvas.width,
-y:Math.random()*canvas.height,
-r:Math.random()*2,
-dx:(Math.random()-0.5),
-dy:(Math.random()-0.5)
-});
-}
-
-function animate(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.fillStyle="#00ffcc";
-particles.forEach(p=>{
-ctx.beginPath();
-ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-ctx.fill();
-p.x+=p.dx;
-p.y+=p.dy;
-if(p.x<0||p.x>canvas.width) p.dx*=-1;
-if(p.y<0||p.y>canvas.height) p.dy*=-1;
-});
-requestAnimationFrame(animate);
-}
-animate();
 
 </script>
 
