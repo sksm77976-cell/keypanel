@@ -1,22 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Key System Panel</title>
+<title>Advanced Key Panel</title>
 <style>
-body{background:#0f0f0f;color:white;font-family:sans-serif;text-align:center}
-button{padding:10px;margin:5px;background:#00ff88;border:none;cursor:pointer}
-input{padding:8px;margin:5px}
-.keyBox{background:#1a1a1a;margin:10px;padding:10px;border-radius:8px}
+body{
+background:#0f0f0f;
+color:white;
+font-family:sans-serif;
+text-align:center
+}
+button{
+padding:8px;
+margin:4px;
+background:#00ff88;
+border:none;
+cursor:pointer;
+border-radius:6px;
+}
+input, select{
+padding:6px;
+margin:4px;
+border-radius:6px;
+border:none;
+}
+.keyBox{
+background:#1a1a1a;
+margin:10px;
+padding:12px;
+border-radius:10px;
+}
 </style>
 </head>
 <body>
 
 <h1>KEY GENERATOR PANEL</h1>
 
-<input id="timeInput" placeholder="Tiempo en horas">
+<h3>Crear Nueva Key</h3>
+<input id="timeValue" placeholder="Cantidad">
+<select id="timeType">
+<option value="minutes">Minutos</option>
+<option value="hours">Horas</option>
+<option value="days">Días</option>
+</select>
 <button onclick="createKey()">Crear Key</button>
 
-<h2>Keys</h2>
+<h2>Keys Generadas</h2>
 <div id="keys"></div>
 
 <script>
@@ -27,12 +55,20 @@ function randomKey(){
 return Math.random().toString(36).substring(2,10).toUpperCase();
 }
 
+function convertToMs(value,type){
+if(type==="minutes") return value*60*1000;
+if(type==="hours") return value*60*60*1000;
+if(type==="days") return value*24*60*60*1000;
+}
+
 function createKey(){
-const hours=parseInt(document.getElementById("timeInput").value);
-if(!hours) return alert("Pon tiempo valido");
+const value=parseInt(document.getElementById("timeValue").value);
+const type=document.getElementById("timeType").value;
+
+if(!value) return alert("Pon un tiempo válido");
 
 const key=randomKey();
-const expire=Date.now()+(hours*60*60*1000);
+const expire=Date.now()+convertToMs(value,type);
 
 fetch(API+"/"+key+".json",{
 method:"PUT",
@@ -50,31 +86,68 @@ fetch(API+".json")
 const box=document.getElementById("keys");
 box.innerHTML="";
 for(let k in data){
+
+let remaining = Math.floor((data[k].expire-Date.now())/1000);
+if(remaining<0) remaining=0;
+
 const div=document.createElement("div");
 div.className="keyBox";
 div.innerHTML=`
 <b>${k}</b><br>
 Expira: ${new Date(data[k].expire).toLocaleString()}<br>
+Tiempo restante: ${remaining}s<br>
 Banned: ${data[k].banned}<br>
+
+<input id="add_${k}" placeholder="Agregar tiempo">
+<select id="type_${k}">
+<option value="minutes">Min</option>
+<option value="hours">Horas</option>
+<option value="days">Días</option>
+</select>
+
+<button onclick="addTime('${k}')">Agregar Tiempo</button>
 <button onclick="banKey('${k}')">Ban</button>
-<button onclick="deleteKey('${k}')">Delete</button>
+<button onclick="deleteKey('${k}')">Borrar</button>
 `;
 box.appendChild(div);
 }
 });
 }
 
+function addTime(key){
+const value=parseInt(document.getElementById("add_"+key).value);
+const type=document.getElementById("type_"+key).value;
+
+if(!value) return alert("Pon tiempo válido");
+
+fetch(API+"/"+key+".json")
+.then(r=>r.json())
+.then(data=>{
+data.expire+=convertToMs(value,type);
+
+fetch(API+"/"+key+".json",{
+method:"PUT",
+body:JSON.stringify(data)
+}).then(loadKeys);
+});
+}
+
 function banKey(key){
-fetch(API+"/"+key+"/banned.json",{method:"PUT",body:"true"})
-.then(loadKeys);
+fetch(API+"/"+key+"/banned.json",{
+method:"PUT",
+body:"true"
+}).then(loadKeys);
 }
 
 function deleteKey(key){
-fetch(API+"/"+key+".json",{method:"DELETE"})
-.then(loadKeys);
+fetch(API+"/"+key+".json",{
+method:"DELETE"
+}).then(loadKeys);
 }
 
 loadKeys();
+setInterval(loadKeys,5000);
+
 </script>
 
 </body>
