@@ -1,52 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>ChristianScript Key Panel</title>
+<title>ChristianScript Premium Panel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+
 body{
+margin:0;
+font-family: 'Segoe UI', sans-serif;
 background:#0f0f0f;
 color:white;
-font-family:sans-serif;
-text-align:center
+overflow-x:hidden;
 }
-button{
-padding:8px;
-margin:4px;
-background:#00ff88;
-border:none;
-cursor:pointer;
-border-radius:6px;
-font-weight:bold;
+
+canvas{
+position:fixed;
+top:0;
+left:0;
+z-index:-1;
 }
+
+h1{
+text-align:center;
+margin-top:20px;
+font-size:35px;
+background:linear-gradient(90deg,#00ffcc,#ff00ff);
+-webkit-background-clip:text;
+color:transparent;
+}
+
+.panel{
+width:90%;
+max-width:1000px;
+margin:auto;
+margin-top:20px;
+background:rgba(20,20,20,0.8);
+padding:20px;
+border-radius:15px;
+box-shadow:0 0 25px #00ffcc55;
+backdrop-filter:blur(10px);
+}
+
+.section{
+margin-bottom:30px;
+}
+
 input, select{
-padding:6px;
-margin:4px;
-border-radius:6px;
+padding:8px;
 border:none;
+border-radius:8px;
+margin:5px;
 }
-.keyBox{
+
+button{
+padding:8px 12px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+transition:0.3s;
+}
+
+.btn-create{
+background:#00ffcc;
+}
+
+.btn-create:hover{
+background:#00ccaa;
+}
+
+.keyCard{
 background:#1a1a1a;
-margin:15px;
+margin:15px 0;
 padding:15px;
 border-radius:12px;
+border:2px solid transparent;
+animation:borderColor 5s linear infinite;
 }
+
+@keyframes borderColor{
+0%{border-color:#00ffcc;}
+50%{border-color:#ff00ff;}
+100%{border-color:#00ffcc;}
+}
+
+.keyTitle{
+font-size:18px;
+font-weight:bold;
+margin-bottom:5px;
+}
+
+.actions button{
+margin:3px;
+}
+
+.actions i{
+margin-right:5px;
+}
+
 </style>
 </head>
 <body>
 
-<h1>ChristianScript Key Generator</h1>
+<canvas id="particles"></canvas>
 
-<h3>Crear Nueva Key</h3>
+<h1>✨ ChristianScript Premium Panel ✨</h1>
+
+<div class="panel">
+
+<div class="section">
+<h3>➕ Crear Nueva Key</h3>
 <input id="timeValue" placeholder="Cantidad">
 <select id="timeType">
 <option value="minutes">Minutos</option>
 <option value="hours">Horas</option>
 <option value="days">Días</option>
 </select>
-<button onclick="createKey()">Crear Key</button>
+<button class="btn-create" onclick="createKey()">Crear</button>
+</div>
 
-<h2>Keys Generadas</h2>
+<div class="section">
+<h3>📜 Keys Generadas</h3>
 <div id="keys"></div>
+</div>
+
+</div>
 
 <script>
 
@@ -67,25 +145,24 @@ if(type==="days") return value*24*60*60*1000;
 }
 
 function formatTime(ms){
-let totalSeconds = Math.floor(ms/1000);
-if(totalSeconds <= 0) return "Expirada";
+let s=Math.floor(ms/1000);
+if(s<=0) return "⛔ Expirada";
 
-let days = Math.floor(totalSeconds / 86400);
-let hours = Math.floor((totalSeconds % 86400)/3600);
-let minutes = Math.floor((totalSeconds % 3600)/60);
-let seconds = totalSeconds % 60;
+let d=Math.floor(s/86400);
+let h=Math.floor((s%86400)/3600);
+let m=Math.floor((s%3600)/60);
+let sec=s%60;
 
-return days+"d "+hours+"h "+minutes+"m "+seconds+"s";
+return `${d}d ${h}h ${m}m ${sec}s`;
 }
 
 function createKey(){
-const value=parseInt(document.getElementById("timeValue").value);
-const type=document.getElementById("timeType").value;
+let value=parseInt(document.getElementById("timeValue").value);
+let type=document.getElementById("timeType").value;
+if(!value) return alert("Tiempo inválido");
 
-if(!value) return alert("Pon tiempo válido");
-
-const key=generateKey();
-const expire=Date.now()+convertToMs(value,type);
+let key=generateKey();
+let expire=Date.now()+convertToMs(value,type);
 
 fetch(API+"/"+key+".json",{
 method:"PUT",
@@ -99,14 +176,12 @@ created:Date.now()
 
 function loadKeys(){
 fetch(API+".json")
-.then(res=>res.json())
+.then(r=>r.json())
 .then(data=>{
-
-const box=document.getElementById("keys");
-box.innerHTML="";
-
+let container=document.getElementById("keys");
+container.innerHTML="";
 if(!data){
-box.innerHTML="<p>No hay keys creadas.</p>";
+container.innerHTML="<p>No hay keys creadas.</p>";
 return;
 }
 
@@ -114,51 +189,61 @@ Object.keys(data).forEach(k=>{
 
 let remaining=data[k].expire-Date.now();
 
-const div=document.createElement("div");
-div.className="keyBox";
+let div=document.createElement("div");
+div.className="keyCard";
 
 div.innerHTML=`
-<b>${k}</b><br>
+<div class="keyTitle">${k}</div>
 Creada: ${new Date(data[k].created).toLocaleString()}<br>
-Expira: ${new Date(data[k].expire).toLocaleString()}<br>
 Tiempo restante: ${formatTime(remaining)}<br>
-Estado: ${data[k].banned ? "BANEADA" : "ACTIVA"}<br><br>
+Estado: ${data[k].banned ? "🔒 BANEADA" : "✅ ACTIVA"}<br><br>
 
-<input id="add_${k}" placeholder="Agregar tiempo">
+<input id="add_${k}" placeholder="Tiempo">
 <select id="type_${k}">
 <option value="minutes">Min</option>
 <option value="hours">Horas</option>
 <option value="days">Días</option>
 </select>
 
-<button onclick="addTime('${k}')">Agregar Tiempo</button>
-<button onclick="toggleBan('${k}', ${data[k].banned})">
-${data[k].banned ? "Desbanear" : "Banear"}
-</button>
-<button onclick="deleteKey('${k}')">Borrar</button>
+<div class="actions">
+<button onclick="addTime('${k}')"><i class="fas fa-plus"></i>Agregar</button>
+<button onclick="removeTime('${k}')"><i class="fas fa-minus"></i>Quitar</button>
+<button onclick="toggleBan('${k}', ${data[k].banned})"><i class="fas fa-lock"></i>Ban</button>
+<button onclick="deleteKey('${k}')"><i class="fas fa-trash"></i>Borrar</button>
+</div>
 `;
 
-box.appendChild(div);
-});
+container.appendChild(div);
 
+});
 });
 }
 
 function addTime(key){
-const value=parseInt(document.getElementById("add_"+key).value);
-const type=document.getElementById("type_"+key).value;
-
-if(!value) return alert("Pon tiempo válido");
+let value=parseInt(document.getElementById("add_"+key).value);
+let type=document.getElementById("type_"+key).value;
+if(!value) return;
 
 fetch(API+"/"+key+".json")
 .then(r=>r.json())
 .then(data=>{
 data.expire+=convertToMs(value,type);
+fetch(API+"/"+key+".json",{method:"PUT",body:JSON.stringify(data)})
+.then(loadKeys);
+});
+}
 
-fetch(API+"/"+key+".json",{
-method:"PUT",
-body:JSON.stringify(data)
-}).then(loadKeys);
+function removeTime(key){
+let value=parseInt(document.getElementById("add_"+key).value);
+let type=document.getElementById("type_"+key).value;
+if(!value) return;
+
+fetch(API+"/"+key+".json")
+.then(r=>r.json())
+.then(data=>{
+data.expire-=convertToMs(value,type);
+fetch(API+"/"+key+".json",{method:"PUT",body:JSON.stringify(data)})
+.then(loadKeys);
 });
 }
 
@@ -170,13 +255,44 @@ body:JSON.stringify(!current)
 }
 
 function deleteKey(key){
-fetch(API+"/"+key+".json",{
-method:"DELETE"
-}).then(loadKeys);
+fetch(API+"/"+key+".json",{method:"DELETE"}).then(loadKeys);
 }
 
-loadKeys();
 setInterval(loadKeys,3000);
+loadKeys();
+
+/* PARTICULAS */
+const canvas=document.getElementById("particles");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let particles=[];
+for(let i=0;i<100;i++){
+particles.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+r:Math.random()*2,
+dx:(Math.random()-0.5),
+dy:(Math.random()-0.5)
+});
+}
+
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#00ffcc";
+particles.forEach(p=>{
+ctx.beginPath();
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+ctx.fill();
+p.x+=p.dx;
+p.y+=p.dy;
+if(p.x<0||p.x>canvas.width) p.dx*=-1;
+if(p.y<0||p.y>canvas.height) p.dy*=-1;
+});
+requestAnimationFrame(animate);
+}
+animate();
 
 </script>
 
