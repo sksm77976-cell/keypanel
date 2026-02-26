@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Key System Panel</title>
+<style>
+body{background:#0f0f0f;color:white;font-family:sans-serif;text-align:center}
+button{padding:10px;margin:5px;background:#00ff88;border:none;cursor:pointer}
+input{padding:8px;margin:5px}
+.keyBox{background:#1a1a1a;margin:10px;padding:10px;border-radius:8px}
+</style>
+</head>
+<body>
+
+<h1>KEY GENERATOR PANEL</h1>
+
+<input id="timeInput" placeholder="Tiempo en horas">
+<button onclick="createKey()">Crear Key</button>
+
+<h2>Keys</h2>
+<div id="keys"></div>
+
+<script>
+
+const API = "https://keysystem-b6950-default-rtdb.firebaseio.com";
+
+function randomKey(){
+return Math.random().toString(36).substring(2,10).toUpperCase();
+}
+
+function createKey(){
+const hours=parseInt(document.getElementById("timeInput").value);
+if(!hours) return alert("Pon tiempo valido");
+
+const key=randomKey();
+const expire=Date.now()+(hours*60*60*1000);
+
+fetch(API+"/"+key+".json",{
+method:"PUT",
+body:JSON.stringify({
+expire:expire,
+banned:false
+})
+}).then(loadKeys);
+}
+
+function loadKeys(){
+fetch(API+".json")
+.then(r=>r.json())
+.then(data=>{
+const box=document.getElementById("keys");
+box.innerHTML="";
+for(let k in data){
+const div=document.createElement("div");
+div.className="keyBox";
+div.innerHTML=`
+<b>${k}</b><br>
+Expira: ${new Date(data[k].expire).toLocaleString()}<br>
+Banned: ${data[k].banned}<br>
+<button onclick="banKey('${k}')">Ban</button>
+<button onclick="deleteKey('${k}')">Delete</button>
+`;
+box.appendChild(div);
+}
+});
+}
+
+function banKey(key){
+fetch(API+"/"+key+"/banned.json",{method:"PUT",body:"true"})
+.then(loadKeys);
+}
+
+function deleteKey(key){
+fetch(API+"/"+key+".json",{method:"DELETE"})
+.then(loadKeys);
+}
+
+loadKeys();
+</script>
+
+</body>
+</html>
