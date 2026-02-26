@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Advanced Key Panel</title>
+<title>ChristianScript Key Panel</title>
 <style>
 body{
 background:#0f0f0f;
@@ -16,6 +16,7 @@ background:#00ff88;
 border:none;
 cursor:pointer;
 border-radius:6px;
+font-weight:bold;
 }
 input, select{
 padding:6px;
@@ -25,15 +26,15 @@ border:none;
 }
 .keyBox{
 background:#1a1a1a;
-margin:10px;
-padding:12px;
-border-radius:10px;
+margin:15px;
+padding:15px;
+border-radius:12px;
 }
 </style>
 </head>
 <body>
 
-<h1>KEY GENERATOR PANEL</h1>
+<h1>ChristianScript Key Generator</h1>
 
 <h3>Crear Nueva Key</h3>
 <input id="timeValue" placeholder="Cantidad">
@@ -49,10 +50,14 @@ border-radius:10px;
 
 <script>
 
-const API = "https://keysystem-b6950-default-rtdb.firebaseio.com";
+const API = "https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
 
-function randomKey(){
-return Math.random().toString(36).substring(2,10).toUpperCase();
+function randomPart(){
+return Math.random().toString(36).substring(2,7).toUpperCase();
+}
+
+function generateKey(){
+return "ChristianScript-" + randomPart() + "-" + randomPart();
 }
 
 function convertToMs(value,type){
@@ -61,42 +66,63 @@ if(type==="hours") return value*60*60*1000;
 if(type==="days") return value*24*60*60*1000;
 }
 
+function formatTime(ms){
+let totalSeconds = Math.floor(ms/1000);
+if(totalSeconds <= 0) return "Expirada";
+
+let days = Math.floor(totalSeconds / 86400);
+let hours = Math.floor((totalSeconds % 86400)/3600);
+let minutes = Math.floor((totalSeconds % 3600)/60);
+let seconds = totalSeconds % 60;
+
+return days+"d "+hours+"h "+minutes+"m "+seconds+"s";
+}
+
 function createKey(){
 const value=parseInt(document.getElementById("timeValue").value);
 const type=document.getElementById("timeType").value;
 
-if(!value) return alert("Pon un tiempo válido");
+if(!value) return alert("Pon tiempo válido");
 
-const key=randomKey();
+const key=generateKey();
 const expire=Date.now()+convertToMs(value,type);
 
 fetch(API+"/"+key+".json",{
 method:"PUT",
 body:JSON.stringify({
 expire:expire,
-banned:false
+banned:false,
+created:Date.now()
 })
 }).then(loadKeys);
 }
 
 function loadKeys(){
 fetch(API+".json")
-.then(r=>r.json())
+.then(res=>res.json())
 .then(data=>{
+
 const box=document.getElementById("keys");
 box.innerHTML="";
-for(let k in data){
 
-let remaining = Math.floor((data[k].expire-Date.now())/1000);
-if(remaining<0) remaining=0;
+if(!data){
+box.innerHTML="<p>No hay keys creadas.</p>";
+return;
+}
+
+Object.keys(data).forEach(k=>{
+
+let remaining=data[k].expire-Date.now();
 
 const div=document.createElement("div");
 div.className="keyBox";
+
 div.innerHTML=`
 <b>${k}</b><br>
+Creada: ${new Date(data[k].created).toLocaleString()}<br>
 Expira: ${new Date(data[k].expire).toLocaleString()}<br>
-Tiempo restante: ${remaining}s<br>
-Banned: ${data[k].banned}<br>
+Tiempo restante: ${formatTime(remaining)}<br>
+Estado: ${data[k].banned ? "BANEADA" : "ACTIVA"}<br><br>
 
 <input id="add_${k}" placeholder="Agregar tiempo">
 <select id="type_${k}">
@@ -106,11 +132,15 @@ Banned: ${data[k].banned}<br>
 </select>
 
 <button onclick="addTime('${k}')">Agregar Tiempo</button>
-<button onclick="banKey('${k}')">Ban</button>
+<button onclick="toggleBan('${k}', ${data[k].banned})">
+${data[k].banned ? "Desbanear" : "Banear"}
+</button>
 <button onclick="deleteKey('${k}')">Borrar</button>
 `;
+
 box.appendChild(div);
-}
+});
+
 });
 }
 
@@ -132,10 +162,10 @@ body:JSON.stringify(data)
 });
 }
 
-function banKey(key){
+function toggleBan(key,current){
 fetch(API+"/"+key+"/banned.json",{
 method:"PUT",
-body:"true"
+body:JSON.stringify(!current)
 }).then(loadKeys);
 }
 
@@ -146,7 +176,7 @@ method:"DELETE"
 }
 
 loadKeys();
-setInterval(loadKeys,5000);
+setInterval(loadKeys,3000);
 
 </script>
 
