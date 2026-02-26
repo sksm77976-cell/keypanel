@@ -1,1 +1,160 @@
-#lockScreen,#particles{position:fixed;height:100%;background:linear-gradient(135deg,#0f172a,#1e293b);width:100%}body{margin:0;font-family:Inter,sans-serif;background:#0f172a;color:#fff;overflow-x:hidden}#lockScreen{top:0;left:0;display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:9999}#lockScreen input{padding:12px;border-radius:10px;border:none;margin-bottom:10px;text-align:center}#lockScreen button{padding:10px 20px;border:none;border-radius:10px;background:#3b82f6;color:#fff;cursor:pointer;transition:.3s}.card,.create-box{background:#1e293b;border-radius:15px}#lockScreen button:hover,button:hover{transform:scale(1.05)}#particles{z-index:-1}.container{width:95%;max-width:1200px;margin:auto;padding:20px}.card,.create-box,.table{padding:15px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin:20px 0}.card{transition:.3s}.action-btn,button{cursor:pointer;transition:.2s}.card:hover{transform:translateY(-5px);box-shadow:0 0 20px rgba(0,255,200,.2)}.stat-number{font-size:22px;font-weight:800;margin-top:5px}.create-box{margin-bottom:20px}input,select{padding:8px;border-radius:8px;border:none;margin:5px 0}button{padding:8px 14px;border:none;border-radius:8px;font-weight:600}.primary{background:#3b82f6;color:#fff}.action-btn{margin-right:6px}.action-btn:hover{transform:scale(1.2)}.table{background:#1e293b;border-radius:15px;overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:700px}td,th{padding:10px;text-align:left}tr{border-bottom:1px solid rgba(255,255,255,.05)}
+<!doctypehtml><meta content="width=device-width,initial-scale=1"name=viewport><title>CH Key Professional Dashboard</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"rel=stylesheet><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,sans-serif;background:#0f172a;color:#fff;overflow-x:hidden}#lockScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:9999}#lockScreen input{padding:12px;border-radius:10px;border:none;margin-bottom:10px;text-align:center}#lockScreen button{padding:10px 20px;border:none;border-radius:10px;background:#3b82f6;color:#fff;cursor:pointer;transition:.3s}#lockScreen button:hover{transform:scale(1.05)}#particles{position:fixed;width:100%;height:100%;z-index:-1;background:linear-gradient(135deg,#0f172a,#1e293b)}.container{width:95%;max-width:1200px;margin:auto;padding:20px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin:20px 0}.card{background:#1e293b;padding:15px;border-radius:15px;transition:.3s}.card:hover{transform:translateY(-5px);box-shadow:0 0 20px rgba(0,255,200,.2)}.stat-number{font-size:22px;font-weight:800;margin-top:5px}.create-box{background:#1e293b;padding:15px;border-radius:15px;margin-bottom:20px}input,select{padding:8px;border-radius:8px;border:none;margin:5px 0}button{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;transition:.2s;font-weight:600}button:hover{transform:scale(1.05)}.primary{background:#3b82f6;color:#fff}.action-btn{cursor:pointer;margin-right:6px;transition:.2s}.action-btn:hover{transform:scale(1.2)}.table{background:#1e293b;padding:15px;border-radius:15px;overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:700px}td,th{padding:10px;text-align:left}tr{border-bottom:1px solid rgba(255,255,255,.05)}</style><div id=lockScreen><h2>🔒 Acceso Restringido</h2><input id=accessCode placeholder="Código de acceso"type=password> <button onclick=checkAccess()>Entrar</button><p id=errorMsg style=color:#ef4444></div><canvas id=particles></canvas><div class=container><h1>🔑 CH Key Professional Dashboard</h1><div class=stats><div class=card>Total<div class=stat-number id=total>0</div></div><div class=card>Activas<div class=stat-number id=active>0</div></div><div class=card>Baneadas<div class=stat-number id=banned>0</div></div><div class=card>Expiradas<div class=stat-number id=expired>0</div></div></div><div class=create-box><h3>➕ Crear Nueva Key</h3><input id=timeValue placeholder=Cantidad> <select id=timeType><option value=minutes>Minutos<option value=hours>Horas<option value=days>Días</select><br><button onclick=createKey() class=primary>Crear</button></div><div class=table><table><thead><tr><th>Key<th>Tiempo Restante<th>Estado<th>Acciones<tbody id=keyTable></table></div></div><script>const API="https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
+let cacheData={};
+
+/* ACCESS */
+function checkAccess(){
+let code=document.getElementById("accessCode").value;
+if(code==="110808"){
+document.getElementById("lockScreen").style.display="none";
+}else{
+document.getElementById("errorMsg").innerText="Código incorrecto";
+}
+}
+
+/* KEY SYSTEM */
+function generateKey(){
+let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+let result="CH";
+for(let i=0;i<4;i++){
+result+=chars.charAt(Math.floor(Math.random()*chars.length));
+}
+return result;
+}
+
+function convertToMs(v,t){
+if(t==="minutes") return v*60000;
+if(t==="hours") return v*3600000;
+if(t==="days") return v*86400000;
+}
+
+function formatTime(ms){
+if(ms<=0) return "Expirada";
+let s=Math.floor(ms/1000);
+let m=Math.floor(s/60);
+let h=Math.floor(m/60);
+let d=Math.floor(h/24);
+return d+"d "+(h%24)+"h "+(m%60)+"m "+(s%60)+"s";
+}
+
+function createKey(){
+let value=parseInt(document.getElementById("timeValue").value);
+let type=document.getElementById("timeType").value;
+if(!value) return;
+
+let key=generateKey();
+let expire=Date.now()+convertToMs(value,type);
+
+fetch(API+"/"+key+".json",{
+method:"PUT",
+body:JSON.stringify({expire:expire,banned:false})
+}).then(loadKeys);
+}
+
+function loadKeys(){
+fetch(API+".json")
+.then(r=>r.json())
+.then(data=>{
+cacheData=data||{};
+renderTable();
+});
+}
+
+function renderTable(){
+let total=0,active=0,banned=0,expired=0;
+let table=document.getElementById("keyTable");
+table.innerHTML="";
+
+Object.keys(cacheData).forEach(k=>{
+total++;
+let data=cacheData[k];
+let remaining=data.expire-Date.now();
+let estado="Activa";
+
+if(data.banned){estado="Baneada";banned++}
+else if(remaining<=0){estado="Expirada";expired++}
+else active++;
+
+let row=document.createElement("tr");
+row.innerHTML=`
+<td>${k} <span class="action-btn" onclick="copyKey('${k}')">📋</span></td>
+<td id="time_${k}">${formatTime(remaining)}</td>
+<td>${estado}</td>
+<td>
+<span class="action-btn" onclick="toggleBan('${k}')">${data.banned?"🟢":"🚫"}</span>
+<span class="action-btn" onclick="addTime('${k}',5)">➕5m</span>
+<span class="action-btn" onclick="removeTime('${k}',5)">➖5m</span>
+<span class="action-btn" onclick="deleteKey('${k}')">🗑️</span>
+</td>`;
+table.appendChild(row);
+});
+
+document.getElementById("total").innerText=total;
+document.getElementById("active").innerText=active;
+document.getElementById("banned").innerText=banned;
+document.getElementById("expired").innerText=expired;
+}
+
+function updateTimers(){
+Object.keys(cacheData).forEach(k=>{
+let el=document.getElementById("time_"+k);
+if(!el) return;
+let remaining=cacheData[k].expire-Date.now();
+el.innerText=formatTime(remaining);
+});
+}
+
+function toggleBan(key){
+cacheData[key].banned=!cacheData[key].banned;
+fetch(API+"/"+key+"/banned.json",{method:"PUT",body:JSON.stringify(cacheData[key].banned)});
+renderTable();
+}
+
+function addTime(key,min){
+cacheData[key].expire+=min*60000;
+fetch(API+"/"+key+"/expire.json",{method:"PUT",body:JSON.stringify(cacheData[key].expire)});
+renderTable();
+}
+
+function removeTime(key,min){
+cacheData[key].expire-=min*60000;
+fetch(API+"/"+key+"/expire.json",{method:"PUT",body:JSON.stringify(cacheData[key].expire)});
+renderTable();
+}
+
+function deleteKey(key){
+fetch(API+"/"+key+".json",{method:"DELETE"}).then(loadKeys);
+}
+
+function copyKey(key){
+navigator.clipboard.writeText(key);
+}
+
+/* AUTO UPDATE */
+setInterval(updateTimers,1000);
+setInterval(loadKeys,5000);
+loadKeys();
+
+/* PARTICLES */
+const canvas=document.getElementById("particles");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let particles=[];
+for(let i=0;i<80;i++){
+particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2});
+}
+
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="rgba(0,255,200,0.3)";
+particles.forEach(p=>{
+ctx.beginPath();
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+ctx.fill();
+p.y+=0.3;
+if(p.y>canvas.height) p.y=0;
+});
+requestAnimationFrame(animate);
+}
+animate();</script>
