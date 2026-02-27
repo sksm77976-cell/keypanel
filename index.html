@@ -1,310 +1,397 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>CH Key System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CH Key Professional Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
+*{box-sizing:border-box}
 body{
 margin:0;
-font-family:Arial;
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+font-family:'Inter',sans-serif;
+background:#0f172a;
 color:white;
 overflow-x:hidden;
 }
 
-.login{
+/* LOCK SCREEN */
+#lockScreen{
 position:fixed;
-inset:0;
+top:0;left:0;
+width:100%;height:100%;
+background:linear-gradient(135deg,#0f172a,#1e293b);
 display:flex;
 justify-content:center;
 align-items:center;
-background:#000000ee;
-z-index:10;
+flex-direction:column;
+z-index:9999;
 }
 
-.login-box{
-background:#111;
-padding:30px;
-border-radius:12px;
+#lockScreen input{
+padding:12px;
+border-radius:10px;
+border:none;
+margin-bottom:10px;
 text-align:center;
-box-shadow:0 0 20px #00e1ff;
-animation:fadeIn .5s;
+}
+
+#lockScreen button{
+padding:10px 20px;
+border:none;
+border-radius:10px;
+background:#3b82f6;
+color:white;
+cursor:pointer;
+transition:0.3s;
+}
+
+#lockScreen button:hover{transform:scale(1.05)}
+
+/* PARTICLES */
+#particles{
+position:fixed;
+width:100%;
+height:100%;
+z-index:-1;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+}
+
+.container{
+width:95%;
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:15px;
+margin:20px 0;
+}
+
+.card{
+background:#1e293b;
+padding:15px;
+border-radius:15px;
+transition:0.3s;
+}
+
+.card:hover{
+transform:translateY(-5px);
+box-shadow:0 0 20px rgba(0,255,200,0.2);
+}
+
+.stat-number{
+font-size:22px;
+font-weight:800;
+margin-top:5px;
+}
+
+.create-box{
+background:#1e293b;
+padding:15px;
+border-radius:15px;
+margin-bottom:20px;
 }
 
 input,select{
 padding:6px;
-border-radius:6px;
+border-radius:8px;
 border:none;
-margin:4px;
+margin:3px 0;
 }
 
 button{
-padding:6px 12px;
+padding:8px 14px;
 border:none;
-border-radius:6px;
+border-radius:8px;
 cursor:pointer;
-background:#00c3ff;
-color:white;
-font-weight:bold;
-transition:.2s;
+transition:0.2s;
+font-weight:600;
 }
 
-button:hover{
-transform:scale(1.05);
-background:#00e1ff;
+button:hover{transform:scale(1.05)}
+
+.primary{background:#3b82f6;color:white}
+
+.action-btn{
+cursor:pointer;
+margin-right:6px;
+transition:0.2s;
+}
+
+.action-btn:hover{transform:scale(1.2)}
+
+.table{
+background:#1e293b;
+padding:15px;
+border-radius:15px;
+overflow-x:auto;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:20px;
+min-width:800px;
 }
 
 th,td{
-padding:8px;
-text-align:center;
+padding:10px;
+text-align:left;
 }
 
 tr{
-background:#111;
-transition:.2s;
-}
-
-tr:hover{
-background:#1b1b1b;
-}
-
-.action{
-cursor:pointer;
-font-size:18px;
-margin:0 4px;
-transition:.2s;
-}
-
-.action:hover{
-transform:scale(1.2);
-}
-
-.status-active{color:#00ff88;}
-.status-expired{color:#ff5555;}
-.status-banned{color:#ff0000;}
-
-.container{
-padding:20px;
-max-width:1100px;
-margin:auto;
-}
-
-@keyframes fadeIn{
-from{opacity:0;transform:scale(.8);}
-to{opacity:1;transform:scale(1);}
-}
-
-@media(max-width:768px){
-table{font-size:12px;}
+border-bottom:1px solid rgba(255,255,255,0.05);
 }
 </style>
 </head>
-
 <body>
 
-<div class="login" id="login">
-<div class="login-box">
-<h2>🔐 Enter Access Code</h2>
-<input type="password" id="accessCode">
-<br><br>
-<button onclick="checkLogin()">ENTER</button>
-</div>
+<div id="lockScreen">
+<h2>🔒 Acceso Restringido</h2>
+<input id="accessCode" type="password" placeholder="Código de acceso">
+<button onclick="checkAccess()">Entrar</button>
+<p id="errorMsg" style="color:#ef4444;"></p>
 </div>
 
-<div class="container" id="panel" style="display:none;">
-<h1>🔑 CH Key System</h1>
+<canvas id="particles"></canvas>
 
-<button onclick="createKey()">➕ Create Key</button>
+<div class="container">
 
+<h1>🔑 CH Key Professional Dashboard</h1>
+
+<div class="stats">
+<div class="card">Total<div id="total" class="stat-number">0</div></div>
+<div class="card">Activas<div id="active" class="stat-number">0</div></div>
+<div class="card">Baneadas<div id="banned" class="stat-number">0</div></div>
+<div class="card">Expiradas<div id="expired" class="stat-number">0</div></div>
+</div>
+
+<div class="create-box">
+<h3>➕ Crear Nueva Key</h3>
+<input id="timeValue" placeholder="Cantidad">
+<select id="timeType">
+<option value="minutes">Minutos</option>
+<option value="hours">Horas</option>
+<option value="days">Días</option>
+</select>
+<br>
+<button class="primary" onclick="createKey()">Crear</button>
+</div>
+
+<div class="table">
 <table>
 <thead>
 <tr>
 <th>Key</th>
-<th>Status</th>
-<th>Time Left</th>
-<th>Actions</th>
+<th>Tiempo Restante</th>
+<th>Estado</th>
+<th>Acciones</th>
 </tr>
 </thead>
 <tbody id="keyTable"></tbody>
 </table>
+</div>
 
 </div>
 
 <script>
 const API="https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
-const ACCESS="110808";
-let cache={};
+let cacheData={};
 
-function checkLogin(){
-let val=document.getElementById("accessCode").value;
-if(val===ACCESS){
-document.getElementById("login").style.display="none";
-document.getElementById("panel").style.display="block";
-loadKeys();
-}else alert("Wrong Code");
-}
-
-function randomKey(){
-return "CH"+Math.floor(1000+Math.random()*9000);
-}
-
-async function createKey(){
-let key=randomKey();
-
-await fetch(API+"/"+key+".json",{
-method:"PUT",
-body:JSON.stringify({
-duration:3600000,
-expire:0,
-started:false,
-banned:false,
-inUse:null
-})
-});
-
-loadKeys();
-}
-
-function convertToMs(value,type){
-if(type==="minutes") return value*60000;
-if(type==="hours") return value*3600000;
-if(type==="days") return value*86400000;
-}
-
-async function addTime(key){
-let val=parseInt(document.getElementById("add_"+key).value);
-let type=document.getElementById("type_"+key).value;
-if(!val||val<=0) return;
-
-let res=await fetch(API+"/"+key+".json");
-let data=await res.json();
-
-let ms=convertToMs(val,type);
-let now=Date.now();
-
-if(!data.expire||data.expire<now){
-data.expire=now+ms;
+/* ACCESS */
+function checkAccess(){
+let code=document.getElementById("accessCode").value;
+if(code==="110808"){
+document.getElementById("lockScreen").style.display="none";
 }else{
-data.expire+=ms;
+document.getElementById("errorMsg").innerText="Código incorrecto";
+}
 }
 
-await fetch(API+"/"+key+"/expire.json",{
+/* KEY FORMAT */
+function generateKey(){
+let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+let result="CH";
+for(let i=0;i<4;i++){
+result+=chars.charAt(Math.floor(Math.random()*chars.length));
+}
+return result;
+}
+
+function convertToMs(v,t){
+if(t==="minutes") return v*60000;
+if(t==="hours") return v*3600000;
+if(t==="days") return v*86400000;
+}
+
+function formatTime(ms){
+if(ms<=0) return "Expirada";
+let s=Math.floor(ms/1000);
+let m=Math.floor(s/60);
+let h=Math.floor(m/60);
+let d=Math.floor(h/24);
+return d+"d "+(h%24)+"h "+(m%60)+"m "+(s%60)+"s";
+}
+
+function createKey(){
+let value=parseInt(document.getElementById("timeValue").value);
+let type=document.getElementById("timeType").value;
+if(!value) return;
+
+let key=generateKey();
+let expire=Date.now()+convertToMs(value,type);
+
+fetch(API+"/"+key+".json",{
 method:"PUT",
-body:JSON.stringify(data.expire)
+body:JSON.stringify({expire:expire,banned:false})
+}).then(loadKeys);
+}
+
+function loadKeys(){
+fetch(API+".json")
+.then(r=>r.json())
+.then(data=>{
+cacheData=data||{};
+renderTable();
+});
+}
+
+function renderTable(){
+let total=0,active=0,banned=0,expired=0;
+let table=document.getElementById("keyTable");
+table.innerHTML="";
+
+Object.keys(cacheData).forEach(k=>{
+total++;
+let data=cacheData[k];
+let remaining=data.expire-Date.now();
+let estado="Activa";
+
+if(data.banned){estado="Baneada";banned++}
+else if(remaining<=0){estado="Expirada";expired++}
+else active++;
+
+let row=document.createElement("tr");
+
+row.innerHTML=`
+<td>${k} <span class="action-btn" onclick="copyKey('${k}')">📋</span></td>
+<td id="time_${k}">${formatTime(remaining)}</td>
+<td>${estado}</td>
+<td>
+<span class="action-btn" onclick="toggleBan('${k}')">${data.banned?"🟢":"🚫"}</span>
+<br><br>
+<input id="amount_${k}" placeholder="Cantidad" style="width:70px;">
+<select id="type_${k}">
+<option value="minutes">Min</option>
+<option value="hours">Horas</option>
+<option value="days">Días</option>
+</select>
+<span class="action-btn" onclick="addTime('${k}')">➕</span>
+<span class="action-btn" onclick="removeTime('${k}')">➖</span>
+<span class="action-btn" onclick="deleteKey('${k}')">🗑️</span>
+</td>
+`;
+
+table.appendChild(row);
 });
 
-loadKeys();
+document.getElementById("total").innerText=total;
+document.getElementById("active").innerText=active;
+document.getElementById("banned").innerText=banned;
+document.getElementById("expired").innerText=expired;
 }
 
-async function removeTime(key){
-let val=parseInt(document.getElementById("add_"+key).value);
+function updateTimers(){
+Object.keys(cacheData).forEach(k=>{
+let el=document.getElementById("time_"+k);
+if(!el) return;
+let remaining=cacheData[k].expire-Date.now();
+el.innerText=formatTime(remaining);
+});
+}
+
+function toggleBan(key){
+cacheData[key].banned=!cacheData[key].banned;
+fetch(API+"/"+key+"/banned.json",{method:"PUT",body:JSON.stringify(cacheData[key].banned)});
+renderTable();
+}
+
+function addTime(key){
+let value=parseInt(document.getElementById("amount_"+key).value);
 let type=document.getElementById("type_"+key).value;
-if(!val||val<=0) return;
+if(!value) return;
 
-let res=await fetch(API+"/"+key+".json");
-let data=await res.json();
+let ms=convertToMs(value,type);
 
-let ms=convertToMs(val,type);
-data.expire-=ms;
-
-await fetch(API+"/"+key+"/expire.json",{
-method:"PUT",
-body:JSON.stringify(data.expire)
-});
-
-loadKeys();
+// revive si estaba expirada
+if(cacheData[key].expire < Date.now()){
+cacheData[key].expire = Date.now() + ms;
+}else{
+cacheData[key].expire += ms;
 }
 
-async function toggleBan(key){
-let res=await fetch(API+"/"+key+"/banned.json");
-let val=await res.json();
-await fetch(API+"/"+key+"/banned.json",{
+fetch(API+"/"+key+"/expire.json",{
 method:"PUT",
-body:JSON.stringify(!val)
+body:JSON.stringify(cacheData[key].expire)
 });
-loadKeys();
+renderTable();
 }
 
-async function deleteKey(key){
-if(!confirm("Delete key?"))return;
-await fetch(API+"/"+key+".json",{method:"DELETE"});
-loadKeys();
+function removeTime(key){
+let value=parseInt(document.getElementById("amount_"+key).value);
+let type=document.getElementById("type_"+key).value;
+if(!value) return;
+
+let ms=convertToMs(value,type);
+cacheData[key].expire -= ms;
+
+fetch(API+"/"+key+"/expire.json",{
+method:"PUT",
+body:JSON.stringify(cacheData[key].expire)
+});
+renderTable();
+}
+
+function deleteKey(key){
+fetch(API+"/"+key+".json",{method:"DELETE"}).then(loadKeys);
 }
 
 function copyKey(key){
 navigator.clipboard.writeText(key);
-alert("Copied: "+key);
 }
 
-function formatTime(ms){
-let now=Date.now();
-let diff=ms-now;
-if(diff<=0)return "Expired";
-let s=Math.floor(diff/1000);
-let h=Math.floor(s/3600);
-let m=Math.floor((s%3600)/60);
-let sec=s%60;
-return h+"h "+m+"m "+sec+"s";
+/* AUTO UPDATE */
+setInterval(updateTimers,1000);
+setInterval(loadKeys,5000);
+loadKeys();
+
+/* PARTICLES */
+const canvas=document.getElementById("particles");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let particles=[];
+for(let i=0;i<80;i++){
+particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2});
 }
 
-async function loadKeys(){
-let res=await fetch(API+".json");
-let data=await res.json();
-cache=data||{};
-render();
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="rgba(0,255,200,0.3)";
+particles.forEach(p=>{
+ctx.beginPath();
+ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+ctx.fill();
+p.y+=0.3;
+if(p.y>canvas.height) p.y=0;
+});
+requestAnimationFrame(animate);
 }
-
-function render(){
-let table=document.getElementById("keyTable");
-table.innerHTML="";
-
-for(let k in cache){
-let data=cache[k];
-let now=Date.now();
-
-let status="Active";
-let classStatus="status-active";
-
-if(data.banned){
-status="Banned";
-classStatus="status-banned";
-}else if(!data.expire||data.expire<now){
-status="Expired";
-classStatus="status-expired";
-}
-
-table.innerHTML+=`
-<tr>
-<td>${k}</td>
-<td class="${classStatus}">${status}</td>
-<td>${formatTime(data.expire)}</td>
-<td>
-<span class="action" onclick="copyKey('${k}')">📋</span>
-<span class="action" onclick="toggleBan('${k}')">${data.banned?"🟢":"🚫"}</span>
-<span class="action" onclick="deleteKey('${k}')">🗑️</span>
-<br>
-<input id="add_${k}" placeholder="Time">
-<select id="type_${k}">
-<option value="minutes">Min</option>
-<option value="hours">Hours</option>
-<option value="days">Days</option>
-</select>
-<span class="action" onclick="addTime('${k}')">➕</span>
-<span class="action" onclick="removeTime('${k}')">➖</span>
-</td>
-</tr>
-`;
-}
-
-setTimeout(loadKeys,1000);
-}
+animate();
 </script>
 
 </body>
