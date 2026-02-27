@@ -1,294 +1,310 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CH Key Professional Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<title>CH Key System</title>
 
 <style>
-*{box-sizing:border-box}
 body{
 margin:0;
-font-family:'Inter',sans-serif;
-background:#0f172a;
+font-family:Arial;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
 color:white;
 overflow-x:hidden;
 }
 
-/* LOCK SCREEN */
-#lockScreen{
+.login{
 position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:linear-gradient(135deg,#0f172a,#1e293b);
+inset:0;
 display:flex;
 justify-content:center;
 align-items:center;
-flex-direction:column;
-z-index:9999;
+background:#000000ee;
+z-index:10;
 }
 
-#lockScreen input{
-padding:12px;
-border-radius:10px;
-border:none;
-margin-bottom:10px;
+.login-box{
+background:#111;
+padding:30px;
+border-radius:12px;
 text-align:center;
+box-shadow:0 0 20px #00e1ff;
+animation:fadeIn .5s;
 }
 
-#lockScreen button{
-padding:10px 20px;
+input,select{
+padding:6px;
+border-radius:6px;
 border:none;
-border-radius:10px;
-background:#3b82f6;
-color:white;
+margin:4px;
+}
+
+button{
+padding:6px 12px;
+border:none;
+border-radius:6px;
 cursor:pointer;
+background:#00c3ff;
+color:white;
+font-weight:bold;
+transition:.2s;
 }
 
-/* PARTICLES */
-#particles{
-position:fixed;
-width:100%;
-height:100%;
-z-index:-1;
-background:linear-gradient(135deg,#0f172a,#1e293b);
-}
-
-.container{
-width:95%;
-max-width:1200px;
-margin:auto;
-padding:20px;
-}
-
-.card{
-background:#1e293b;
-padding:15px;
-border-radius:15px;
-margin-bottom:15px;
+button:hover{
+transform:scale(1.05);
+background:#00e1ff;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-min-width:900px;
+margin-top:20px;
 }
 
 th,td{
-padding:10px;
-text-align:left;
+padding:8px;
+text-align:center;
 }
 
 tr{
-border-bottom:1px solid rgba(255,255,255,0.05);
+background:#111;
+transition:.2s;
+}
+
+tr:hover{
+background:#1b1b1b;
 }
 
 .action{
 cursor:pointer;
-margin-right:8px;
+font-size:18px;
+margin:0 4px;
+transition:.2s;
+}
+
+.action:hover{
+transform:scale(1.2);
+}
+
+.status-active{color:#00ff88;}
+.status-expired{color:#ff5555;}
+.status-banned{color:#ff0000;}
+
+.container{
+padding:20px;
+max-width:1100px;
+margin:auto;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:scale(.8);}
+to{opacity:1;transform:scale(1);}
+}
+
+@media(max-width:768px){
+table{font-size:12px;}
 }
 </style>
 </head>
+
 <body>
 
-<div id="lockScreen">
-<h2>🔒 Acceso Restringido</h2>
-<input id="accessCode" type="password" placeholder="Código">
-<button onclick="checkAccess()">Entrar</button>
-<p id="errorMsg" style="color:red;"></p>
+<div class="login" id="login">
+<div class="login-box">
+<h2>🔐 Enter Access Code</h2>
+<input type="password" id="accessCode">
+<br><br>
+<button onclick="checkLogin()">ENTER</button>
+</div>
 </div>
 
-<canvas id="particles"></canvas>
+<div class="container" id="panel" style="display:none;">
+<h1>🔑 CH Key System</h1>
 
-<div class="container">
+<button onclick="createKey()">➕ Create Key</button>
 
-<h1>🔑 CH Key Dashboard</h1>
-
-<div class="card">
-<h3>Crear Nueva Key</h3>
-<input id="timeValue" placeholder="Cantidad">
-<select id="timeType">
-<option value="minutes">Minutos</option>
-<option value="hours">Horas</option>
-<option value="days">Días</option>
-</select>
-<button onclick="createKey()">Crear</button>
-</div>
-
-<div class="card">
 <table>
 <thead>
 <tr>
 <th>Key</th>
-<th>Duración</th>
-<th>Tiempo Restante</th>
-<th>Estado</th>
-<th>Uso</th>
-<th>Acciones</th>
+<th>Status</th>
+<th>Time Left</th>
+<th>Actions</th>
 </tr>
 </thead>
 <tbody id="keyTable"></tbody>
 </table>
-</div>
 
 </div>
 
 <script>
 const API="https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
+const ACCESS="110808";
 let cache={};
 
-function checkAccess(){
-if(document.getElementById("accessCode").value==="110808"){
-document.getElementById("lockScreen").style.display="none";
-}
-else{
-document.getElementById("errorMsg").innerText="Código incorrecto";
-}
-}
-
-function generateKey(){
-let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let k="CH";
-for(let i=0;i<4;i++){
-k+=chars.charAt(Math.floor(Math.random()*chars.length));
-}
-return k;
+function checkLogin(){
+let val=document.getElementById("accessCode").value;
+if(val===ACCESS){
+document.getElementById("login").style.display="none";
+document.getElementById("panel").style.display="block";
+loadKeys();
+}else alert("Wrong Code");
 }
 
-function convertToMs(v,t){
-if(t==="minutes") return v*60000;
-if(t==="hours") return v*3600000;
-if(t==="days") return v*86400000;
+function randomKey(){
+return "CH"+Math.floor(1000+Math.random()*9000);
 }
 
-function format(ms){
-if(!ms) return "No activada";
-if(ms<=0) return "Expirada";
-let s=Math.floor(ms/1000);
-let m=Math.floor(s/60);
-let h=Math.floor(m/60);
-let d=Math.floor(h/24);
-return d+"d "+(h%24)+"h "+(m%60)+"m "+(s%60)+"s";
-}
+async function createKey(){
+let key=randomKey();
 
-function createKey(){
-let val=parseInt(document.getElementById("timeValue").value);
-let type=document.getElementById("timeType").value;
-if(!val) return;
-
-let key=generateKey();
-let duration=convertToMs(val,type);
-
-fetch(API+"/"+key+".json",{
+await fetch(API+"/"+key+".json",{
 method:"PUT",
 body:JSON.stringify({
-duration:duration,
-expire:null,
+duration:3600000,
+expire:0,
+started:false,
 banned:false,
-inUse:false,
-user:null
+inUse:null
 })
-}).then(load);
+});
+
+loadKeys();
 }
 
-function load(){
-fetch(API+".json")
-.then(r=>r.json())
-.then(data=>{
+function convertToMs(value,type){
+if(type==="minutes") return value*60000;
+if(type==="hours") return value*3600000;
+if(type==="days") return value*86400000;
+}
+
+async function addTime(key){
+let val=parseInt(document.getElementById("add_"+key).value);
+let type=document.getElementById("type_"+key).value;
+if(!val||val<=0) return;
+
+let res=await fetch(API+"/"+key+".json");
+let data=await res.json();
+
+let ms=convertToMs(val,type);
+let now=Date.now();
+
+if(!data.expire||data.expire<now){
+data.expire=now+ms;
+}else{
+data.expire+=ms;
+}
+
+await fetch(API+"/"+key+"/expire.json",{
+method:"PUT",
+body:JSON.stringify(data.expire)
+});
+
+loadKeys();
+}
+
+async function removeTime(key){
+let val=parseInt(document.getElementById("add_"+key).value);
+let type=document.getElementById("type_"+key).value;
+if(!val||val<=0) return;
+
+let res=await fetch(API+"/"+key+".json");
+let data=await res.json();
+
+let ms=convertToMs(val,type);
+data.expire-=ms;
+
+await fetch(API+"/"+key+"/expire.json",{
+method:"PUT",
+body:JSON.stringify(data.expire)
+});
+
+loadKeys();
+}
+
+async function toggleBan(key){
+let res=await fetch(API+"/"+key+"/banned.json");
+let val=await res.json();
+await fetch(API+"/"+key+"/banned.json",{
+method:"PUT",
+body:JSON.stringify(!val)
+});
+loadKeys();
+}
+
+async function deleteKey(key){
+if(!confirm("Delete key?"))return;
+await fetch(API+"/"+key+".json",{method:"DELETE"});
+loadKeys();
+}
+
+function copyKey(key){
+navigator.clipboard.writeText(key);
+alert("Copied: "+key);
+}
+
+function formatTime(ms){
+let now=Date.now();
+let diff=ms-now;
+if(diff<=0)return "Expired";
+let s=Math.floor(diff/1000);
+let h=Math.floor(s/3600);
+let m=Math.floor((s%3600)/60);
+let sec=s%60;
+return h+"h "+m+"m "+sec+"s";
+}
+
+async function loadKeys(){
+let res=await fetch(API+".json");
+let data=await res.json();
 cache=data||{};
 render();
-});
 }
 
 function render(){
 let table=document.getElementById("keyTable");
 table.innerHTML="";
 
-Object.keys(cache).forEach(k=>{
-let d=cache[k];
-let remaining=d.expire?d.expire-Date.now():null;
+for(let k in cache){
+let data=cache[k];
+let now=Date.now();
 
-let row=document.createElement("tr");
+let status="Active";
+let classStatus="status-active";
 
-row.innerHTML=`
+if(data.banned){
+status="Banned";
+classStatus="status-banned";
+}else if(!data.expire||data.expire<now){
+status="Expired";
+classStatus="status-expired";
+}
+
+table.innerHTML+=`
+<tr>
 <td>${k}</td>
-<td>${Math.floor(d.duration/60000)} min</td>
-<td id="time_${k}">${format(remaining)}</td>
-<td>${d.banned?"🚫 Baneada":"Activa"}</td>
-<td>${d.inUse?"🟢 En uso":"Libre"}</td>
+<td class="${classStatus}">${status}</td>
+<td>${formatTime(data.expire)}</td>
 <td>
 <span class="action" onclick="copyKey('${k}')">📋</span>
-<span class="action" onclick="toggleBan('${k}')">${d.banned?"🟢":"🚫"}</span>
-<span class="action" onclick="releaseKey('${k}')">🔓</span>
+<span class="action" onclick="toggleBan('${k}')">${data.banned?"🟢":"🚫"}</span>
 <span class="action" onclick="deleteKey('${k}')">🗑️</span>
+<br>
+<input id="add_${k}" placeholder="Time">
+<select id="type_${k}">
+<option value="minutes">Min</option>
+<option value="hours">Hours</option>
+<option value="days">Days</option>
+</select>
+<span class="action" onclick="addTime('${k}')">➕</span>
+<span class="action" onclick="removeTime('${k}')">➖</span>
 </td>
+</tr>
 `;
-
-table.appendChild(row);
-});
 }
 
-function updateTimers(){
-Object.keys(cache).forEach(k=>{
-let d=cache[k];
-if(!d.expire) return;
-let el=document.getElementById("time_"+k);
-if(!el) return;
-let remaining=d.expire-Date.now();
-el.innerText=format(remaining);
-});
+setTimeout(loadKeys,1000);
 }
-
-function toggleBan(key){
-cache[key].banned=!cache[key].banned;
-fetch(API+"/"+key+"/banned.json",{method:"PUT",body:JSON.stringify(cache[key].banned)});
-render();
-}
-
-function releaseKey(key){
-fetch(API+"/"+key+".json",{
-method:"PATCH",
-body:JSON.stringify({
-inUse:false,
-user:null
-})
-}).then(load);
-}
-
-function deleteKey(key){
-fetch(API+"/"+key+".json",{method:"DELETE"}).then(load);
-}
-
-function copyKey(k){
-navigator.clipboard.writeText(k);
-}
-
-setInterval(updateTimers,1000);
-setInterval(load,5000);
-load();
-
-/* PARTICLES */
-const canvas=document.getElementById("particles");
-const ctx=canvas.getContext("2d");
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
-let particles=[];
-for(let i=0;i<70;i++){
-particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2});
-}
-function anim(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.fillStyle="rgba(0,255,200,0.3)";
-particles.forEach(p=>{
-ctx.beginPath();
-ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-ctx.fill();
-p.y+=0.3;
-if(p.y>canvas.height)p.y=0;
-});
-requestAnimationFrame(anim);
-}
-anim();
 </script>
 
 </body>
