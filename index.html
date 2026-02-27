@@ -43,10 +43,7 @@ border-radius:10px;
 background:#3b82f6;
 color:white;
 cursor:pointer;
-transition:0.3s;
 }
-
-#lockScreen button:hover{transform:scale(1.05)}
 
 /* PARTICLES */
 #particles{
@@ -64,77 +61,17 @@ margin:auto;
 padding:20px;
 }
 
-.stats{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-gap:15px;
-margin:20px 0;
-}
-
 .card{
 background:#1e293b;
 padding:15px;
 border-radius:15px;
-transition:0.3s;
-}
-
-.card:hover{
-transform:translateY(-5px);
-box-shadow:0 0 20px rgba(0,255,200,0.2);
-}
-
-.stat-number{
-font-size:22px;
-font-weight:800;
-margin-top:5px;
-}
-
-.create-box{
-background:#1e293b;
-padding:15px;
-border-radius:15px;
-margin-bottom:20px;
-}
-
-input,select{
-padding:6px;
-border-radius:8px;
-border:none;
-margin:3px 0;
-}
-
-button{
-padding:8px 14px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-transition:0.2s;
-font-weight:600;
-}
-
-button:hover{transform:scale(1.05)}
-
-.primary{background:#3b82f6;color:white}
-
-.action-btn{
-cursor:pointer;
-margin-right:6px;
-transition:0.2s;
-}
-
-.action-btn:hover{transform:scale(1.2)}
-
-.table{
-background:#1e293b;
-padding:15px;
-border-radius:15px;
-overflow-x:auto;
+margin-bottom:15px;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-min-width:800px;
+min-width:900px;
 }
 
 th,td{
@@ -145,49 +82,48 @@ text-align:left;
 tr{
 border-bottom:1px solid rgba(255,255,255,0.05);
 }
+
+.action{
+cursor:pointer;
+margin-right:8px;
+}
 </style>
 </head>
 <body>
 
 <div id="lockScreen">
 <h2>🔒 Acceso Restringido</h2>
-<input id="accessCode" type="password" placeholder="Código de acceso">
+<input id="accessCode" type="password" placeholder="Código">
 <button onclick="checkAccess()">Entrar</button>
-<p id="errorMsg" style="color:#ef4444;"></p>
+<p id="errorMsg" style="color:red;"></p>
 </div>
 
 <canvas id="particles"></canvas>
 
 <div class="container">
 
-<h1>🔑 CH Key Professional Dashboard</h1>
+<h1>🔑 CH Key Dashboard</h1>
 
-<div class="stats">
-<div class="card">Total<div id="total" class="stat-number">0</div></div>
-<div class="card">Activas<div id="active" class="stat-number">0</div></div>
-<div class="card">Baneadas<div id="banned" class="stat-number">0</div></div>
-<div class="card">Expiradas<div id="expired" class="stat-number">0</div></div>
-</div>
-
-<div class="create-box">
-<h3>➕ Crear Nueva Key</h3>
+<div class="card">
+<h3>Crear Nueva Key</h3>
 <input id="timeValue" placeholder="Cantidad">
 <select id="timeType">
 <option value="minutes">Minutos</option>
 <option value="hours">Horas</option>
 <option value="days">Días</option>
 </select>
-<br>
-<button class="primary" onclick="createKey()">Crear</button>
+<button onclick="createKey()">Crear</button>
 </div>
 
-<div class="table">
+<div class="card">
 <table>
 <thead>
 <tr>
 <th>Key</th>
+<th>Duración</th>
 <th>Tiempo Restante</th>
 <th>Estado</th>
+<th>Uso</th>
 <th>Acciones</th>
 </tr>
 </thead>
@@ -199,26 +135,24 @@ border-bottom:1px solid rgba(255,255,255,0.05);
 
 <script>
 const API="https://keysystem-b6950-default-rtdb.firebaseio.com/keys";
-let cacheData={};
+let cache={};
 
-/* ACCESS */
 function checkAccess(){
-let code=document.getElementById("accessCode").value;
-if(code==="110808"){
+if(document.getElementById("accessCode").value==="110808"){
 document.getElementById("lockScreen").style.display="none";
-}else{
+}
+else{
 document.getElementById("errorMsg").innerText="Código incorrecto";
 }
 }
 
-/* KEY FORMAT */
 function generateKey(){
 let chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let result="CH";
+let k="CH";
 for(let i=0;i<4;i++){
-result+=chars.charAt(Math.floor(Math.random()*chars.length));
+k+=chars.charAt(Math.floor(Math.random()*chars.length));
 }
-return result;
+return k;
 }
 
 function convertToMs(v,t){
@@ -227,7 +161,8 @@ if(t==="hours") return v*3600000;
 if(t==="days") return v*86400000;
 }
 
-function formatTime(ms){
+function format(ms){
+if(!ms) return "No activada";
 if(ms<=0) return "Expirada";
 let s=Math.floor(ms/1000);
 let m=Math.floor(s/60);
@@ -237,149 +172,111 @@ return d+"d "+(h%24)+"h "+(m%60)+"m "+(s%60)+"s";
 }
 
 function createKey(){
-let value=parseInt(document.getElementById("timeValue").value);
+let val=parseInt(document.getElementById("timeValue").value);
 let type=document.getElementById("timeType").value;
-if(!value) return;
+if(!val) return;
 
 let key=generateKey();
-let expire=Date.now()+convertToMs(value,type);
+let duration=convertToMs(val,type);
 
 fetch(API+"/"+key+".json",{
 method:"PUT",
-body:JSON.stringify({expire:expire,banned:false})
-}).then(loadKeys);
+body:JSON.stringify({
+duration:duration,
+expire:null,
+banned:false,
+inUse:false,
+user:null
+})
+}).then(load);
 }
 
-function loadKeys(){
+function load(){
 fetch(API+".json")
 .then(r=>r.json())
 .then(data=>{
-cacheData=data||{};
-renderTable();
+cache=data||{};
+render();
 });
 }
 
-function renderTable(){
-let total=0,active=0,banned=0,expired=0;
+function render(){
 let table=document.getElementById("keyTable");
 table.innerHTML="";
 
-Object.keys(cacheData).forEach(k=>{
-total++;
-let data=cacheData[k];
-let remaining=data.expire-Date.now();
-let estado="Activa";
-
-if(data.banned){estado="Baneada";banned++}
-else if(remaining<=0){estado="Expirada";expired++}
-else active++;
+Object.keys(cache).forEach(k=>{
+let d=cache[k];
+let remaining=d.expire?d.expire-Date.now():null;
 
 let row=document.createElement("tr");
 
 row.innerHTML=`
-<td>${k} <span class="action-btn" onclick="copyKey('${k}')">📋</span></td>
-<td id="time_${k}">${formatTime(remaining)}</td>
-<td>${estado}</td>
+<td>${k}</td>
+<td>${Math.floor(d.duration/60000)} min</td>
+<td id="time_${k}">${format(remaining)}</td>
+<td>${d.banned?"🚫 Baneada":"Activa"}</td>
+<td>${d.inUse?"🟢 En uso":"Libre"}</td>
 <td>
-<span class="action-btn" onclick="toggleBan('${k}')">${data.banned?"🟢":"🚫"}</span>
-<br><br>
-<input id="amount_${k}" placeholder="Cantidad" style="width:70px;">
-<select id="type_${k}">
-<option value="minutes">Min</option>
-<option value="hours">Horas</option>
-<option value="days">Días</option>
-</select>
-<span class="action-btn" onclick="addTime('${k}')">➕</span>
-<span class="action-btn" onclick="removeTime('${k}')">➖</span>
-<span class="action-btn" onclick="deleteKey('${k}')">🗑️</span>
+<span class="action" onclick="copyKey('${k}')">📋</span>
+<span class="action" onclick="toggleBan('${k}')">${d.banned?"🟢":"🚫"}</span>
+<span class="action" onclick="releaseKey('${k}')">🔓</span>
+<span class="action" onclick="deleteKey('${k}')">🗑️</span>
 </td>
 `;
 
 table.appendChild(row);
 });
-
-document.getElementById("total").innerText=total;
-document.getElementById("active").innerText=active;
-document.getElementById("banned").innerText=banned;
-document.getElementById("expired").innerText=expired;
 }
 
 function updateTimers(){
-Object.keys(cacheData).forEach(k=>{
+Object.keys(cache).forEach(k=>{
+let d=cache[k];
+if(!d.expire) return;
 let el=document.getElementById("time_"+k);
 if(!el) return;
-let remaining=cacheData[k].expire-Date.now();
-el.innerText=formatTime(remaining);
+let remaining=d.expire-Date.now();
+el.innerText=format(remaining);
 });
 }
 
 function toggleBan(key){
-cacheData[key].banned=!cacheData[key].banned;
-fetch(API+"/"+key+"/banned.json",{method:"PUT",body:JSON.stringify(cacheData[key].banned)});
-renderTable();
+cache[key].banned=!cache[key].banned;
+fetch(API+"/"+key+"/banned.json",{method:"PUT",body:JSON.stringify(cache[key].banned)});
+render();
 }
 
-function addTime(key){
-let value=parseInt(document.getElementById("amount_"+key).value);
-let type=document.getElementById("type_"+key).value;
-if(!value) return;
-
-let ms=convertToMs(value,type);
-
-// revive si estaba expirada
-if(cacheData[key].expire < Date.now()){
-cacheData[key].expire = Date.now() + ms;
-}else{
-cacheData[key].expire += ms;
-}
-
-fetch(API+"/"+key+"/expire.json",{
-method:"PUT",
-body:JSON.stringify(cacheData[key].expire)
-});
-renderTable();
-}
-
-function removeTime(key){
-let value=parseInt(document.getElementById("amount_"+key).value);
-let type=document.getElementById("type_"+key).value;
-if(!value) return;
-
-let ms=convertToMs(value,type);
-cacheData[key].expire -= ms;
-
-fetch(API+"/"+key+"/expire.json",{
-method:"PUT",
-body:JSON.stringify(cacheData[key].expire)
-});
-renderTable();
+function releaseKey(key){
+fetch(API+"/"+key+".json",{
+method:"PATCH",
+body:JSON.stringify({
+inUse:false,
+user:null
+})
+}).then(load);
 }
 
 function deleteKey(key){
-fetch(API+"/"+key+".json",{method:"DELETE"}).then(loadKeys);
+fetch(API+"/"+key+".json",{method:"DELETE"}).then(load);
 }
 
-function copyKey(key){
-navigator.clipboard.writeText(key);
+function copyKey(k){
+navigator.clipboard.writeText(k);
 }
 
-/* AUTO UPDATE */
 setInterval(updateTimers,1000);
-setInterval(loadKeys,5000);
-loadKeys();
+setInterval(load,5000);
+load();
 
 /* PARTICLES */
 const canvas=document.getElementById("particles");
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
-
 let particles=[];
-for(let i=0;i<80;i++){
+for(let i=0;i<70;i++){
 particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2});
 }
-
-function animate(){
+function anim(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 ctx.fillStyle="rgba(0,255,200,0.3)";
 particles.forEach(p=>{
@@ -387,11 +284,11 @@ ctx.beginPath();
 ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
 ctx.fill();
 p.y+=0.3;
-if(p.y>canvas.height) p.y=0;
+if(p.y>canvas.height)p.y=0;
 });
-requestAnimationFrame(animate);
+requestAnimationFrame(anim);
 }
-animate();
+anim();
 </script>
 
 </body>
